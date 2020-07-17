@@ -1,6 +1,7 @@
 {
-  "name": "geojson_test",
+  "name": "clime.ai-viewer",
   "version": "0.1.0",
+  "author":"Marvin Gabler",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",

@@ -35,8 +35,8 @@
       />
 
     <l-control-attribution position="bottomright" prefix="clime.ai"></l-control-attribution>
-    <l-control-layers position="bottomright"  ></l-control-layers>
     <l-control-scale position="bottomright" :imperial="true" :metric="true"></l-control-scale>
+    <l-control-layers position="bottomleft"  ></l-control-layers>
 
     </l-map>
      
