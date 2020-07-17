@@ -1,5 +1,5 @@
 <template>
-<v-content>
+<v-main>
   <div  >
 
     <img :src="require(`@/assets/logo.png`)" style="width:10%; margin-top:0px; padding-top:0px;" />
@@ -9,7 +9,7 @@
     </div>
 
     <v-row    
-    class="black--text">
+    class="black--text elevation-10">
 
     <l-map
     ref="map"
@@ -18,7 +18,6 @@
     :center="center"
     :options="mapOptions"
     @update:center="centerUpdated"
-    class="elevation-10"
     >
 
     <v-geo-search
@@ -37,14 +36,20 @@
 
     <l-control-attribution position="bottomright" prefix="clime.ai"></l-control-attribution>
     <l-control-layers position="bottomright"  ></l-control-layers>
+    <l-control-scale position="bottomright" :imperial="true" :metric="false"></l-control-scale>
 
     </l-map>
-
+     
+      
       <v-virtual-scroll
         :items="geoJSONarray"
         height="800"
         item-height="800"
       >
+
+       <p class="title text-center">
+        geoJSON
+      </p>
 
      <vue-json-pretty
       v-if="geoJSONbool"
@@ -58,7 +63,7 @@
       </vue-json-pretty>
 
       </v-virtual-scroll>
-
+      
     </v-row>
 
     <v-row class="text-center" align="center" justify="center" style="margin:auto; justify-content: center; margin-bottom: 30px; margin-top: 0px;" >
@@ -123,12 +128,12 @@
 
   </div>
 
-</v-content>
+</v-main>
 
 </template>
 
 <script>
-import {LMap, LTileLayer, LControlAttribution, LControlLayers } from 'vue2-leaflet';
+import {LMap, LTileLayer, LControlAttribution, LControlLayers, LControlScale } from 'vue2-leaflet';
 import { OpenStreetMapProvider } from 'leaflet-geosearch';
 import VGeoSearch from './GeoSearch.vue';
 import 'leaflet-draw';
@@ -142,6 +147,7 @@ export default {
     LControlAttribution,
     LTileLayer,
     LControlLayers,
+    LControlScale,
     VGeoSearch,
     VueJsonPretty
   },
@@ -195,7 +201,7 @@ export default {
         notFoundMessage: "We could not find this adress.",
         searchLabel: "Type in a place...",
         zoomLevel: 9,
-        style:'bar',
+        style:'button',
         showPopup: false,
         retainZoomLevel: false,
         animateZoom: true,

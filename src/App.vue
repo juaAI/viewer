@@ -1,9 +1,7 @@
 <template>
   <v-app>
     <v-main>
-      <div id="app">
         <HelloWorld/>
-      </div>
     </v-main>
   </v-app>
 </template>
@@ -28,8 +26,8 @@ export default {
   color: #2c3e50;
   margin-top: 10px;
 }
-.v-application a {
-    color: rgb(216, 234, 247) !important;
+.leaflet-draw-actions a {
+    color: white !important;
 }
 
 </style>
