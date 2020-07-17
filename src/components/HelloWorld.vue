@@ -170,6 +170,10 @@ export default {
       inputJSONstring: undefined,
       featureAmount: undefined,
       maxFeatures: 5,
+      PopupOptions : {
+                      'maxWidth': '600',
+                      'className' : 'customPopup'
+                      },
       tileProviders: [
         {
           name: 'OpenStreetMap',
@@ -223,7 +227,7 @@ export default {
               this.drawControl = new window.L.Control.Draw({
                 position: 'topright',
                 draw: {
-                  polyline: false,
+                  polyline: true,
                   //{
                   //  allowIntersection: false,
                   //  showArea: true
@@ -236,7 +240,7 @@ export default {
                 },
                 edit: {
                   featureGroup: this.editableLayers,
-                  polyline: false,
+                  polyline: true,
                   polygon: true,
                   rectangle: true,
                   circle: false,
@@ -256,16 +260,38 @@ export default {
                 // const type = e.layerType;
                 const layer = e.layer;
                 // Do whatever else you need to. (save to db, add to map etc)
-                this.editableLayers.addLayer(layer);                
+                var content = this.getPopupContent(layer);
+
+                if (content !== null) {
+                      layer.bindPopup(content, this.PopupOptions);}     
+                
+                this.editableLayers.addLayer(layer);
                 this.featureAmount = Object.keys(this.editableLayers._layers).length; 
                 this.printGeoJson(); 
+
                 }
                 else {
                   window.alert("This is not allowed!")
                 }
               });
 
-              map.on(window.L.Draw.Event.EDITED, () => {
+              map.on(window.L.Draw.Event.EDITED, (e) => {
+                var layers = e.layers, content = null;
+                try {
+
+                  layers.eachLayer(function(layer){
+                  content = this.getPopupContent(layer);
+                  if (content !== null) {
+                    layer.bindPopup(content, this.PopupOptions);}  
+                  
+                  })
+                  
+                } catch (error) {
+
+                    //console.log("Finally you are looking after me... i was feeling so lonely.")
+
+                }
+                
                 this.geoJSON = this.editableLayers.toGeoJSON();
 
               });
@@ -320,7 +346,12 @@ export default {
     },
 
     layerToMap(feature,layer){
+
+      var content = this.getPopupContent(layer);
+      if (content !== null) {
+            layer.bindPopup(content, this.PopupOptions);}     
       this.editableLayers.addLayer(layer);
+
     },
 
     doNothing() {
@@ -332,7 +363,44 @@ export default {
     },
     onError: function () {
       alert('Failed to copy texts')
-    }
+    },
+    getPopupContent: function(layer) {
+            // Marker - add lat/long
+           
+            if (layer instanceof window.L.Marker || layer instanceof window.L.CircleMarker) {
+                return this.strLatLng(layer.getLatLng());
+            // Circle - lat/long, radius
+            } else if (layer instanceof window.L.Circle) {
+                var center = layer.getLatLng(),
+                    radius = layer.getRadius();
+                return "Center: "+ this.strLatLng(center)+"<br />"
+                      +"Radius: "+ this._round(radius, 2)+" m";
+            // Rectangle/Polygon - area
+            } else if (layer instanceof window.L.Polygon) {
+                let latlngs = layer._defaultShape ? layer._defaultShape() : layer.getLatLngs(),
+                    area = window.L.GeometryUtil.geodesicArea(latlngs);
+                return "Area: "+ window.L.GeometryUtil.readableArea(area, true);
+            // Polyline - distance
+            } else if (layer instanceof window.L.Polyline) {
+                let latlngs = layer._defaultShape ? layer._defaultShape() : layer.getLatLngs(),
+                    distance = 0;
+                if (latlngs.length < 2) {
+                    return "Distance: N/A";
+                } else {
+                    for (var i = 0; i < latlngs.length-1; i++) {
+                        distance += latlngs[i].distanceTo(latlngs[i+1]);
+                    }
+                    return "Distance: "+ this._round(distance, 2)+" m";
+                }
+            }
+        return null;
+        },
+        _round: function(num, len) {
+            return Math.round(num*(Math.pow(10, len)))/(Math.pow(10, len));
+        },
+        // Helper method to format LatLng object (x.xxxxxx, y.yyyyyy)
+        strLatLng: function(latlng) {
+            return "Lat "+ this._round(latlng.lat, 6)+" | Lon "+ this._round(latlng.lng, 6);}
 
 
   },
@@ -348,7 +416,8 @@ export default {
     },
     geoJSONarray: function() {
       return [this.geoJSON]
-    }
+    },
+   
 
 
   }
@@ -357,12 +426,40 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
+<style>
 ul {
   list-style-type: none;
 }
 a {
   color: #42b983;
 }
+
+.leaflet-tooltip-top:before, 
+.leaflet-tooltip-bottom:before, 
+.leaflet-tooltip-left:before, 
+.leaflet-tooltip-right:before {
+    border: none !important;
+}
+
+.leaflet-popup-tip {
+    background: rgba(0, 0, 0, 0) !important;
+    box-shadow: none !important;
+  }
+
+
+.customPopup .leaflet-popup-content-wrapper {
+    background: #0085E5;
+    color: #ffffff;
+    font-weight: 500;
+    font-size:14px;
+    border-radius: 0;
+    padding: 10px;
+}
+
+.leaflet-popup-close-button {
+   display: none; 
+}
+
+
 
 </style>
