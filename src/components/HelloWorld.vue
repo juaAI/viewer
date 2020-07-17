@@ -1,16 +1,24 @@
 <template>
-  <div class="hello">
-    <div style="width:500px; margin:0 auto; justify-content: center">
+<v-content>
+  <div  >
+
+    <img :src="require(`@/assets/logo.png`)" style="width:10%; margin-top:0px; padding-top:0px;" />
+
+    <div style="width:400px; margin:10px auto; justify-content: center">
     geoJSON Picker | &copy;  clime.ai 
     </div>
 
+    <v-row    
+    class="black--text">
+
     <l-map
     ref="map"
-    style="height:500px; width: 50%; margin: auto;"
+    style="height:800px; width: 50%; margin: auto; margin-left: 10px;"
     :zoom="zoom"
     :center="center"
     :options="mapOptions"
     @update:center="centerUpdated"
+    class="elevation-10"
     >
 
     <v-geo-search
@@ -30,34 +38,93 @@
     <l-control-attribution position="bottomright" prefix="clime.ai"></l-control-attribution>
     <l-control-layers position="bottomright"  ></l-control-layers>
 
-
     </l-map>
 
-      <div> 
+      <v-virtual-scroll
+        :items="geoJSONarray"
+        height="800"
+        item-height="800"
+      >
 
-        Current center: lat {{lat}} lon {{ lon }}
+     <vue-json-pretty
+      v-if="geoJSONbool"
+      :data="geoJSON"
+      @click="doNothing"
+      :showLine="false"
+      :highlightMouseoverNode="true"
+      :showLength="true"
+      id="geoJSONpretty"
+      >
+      </vue-json-pretty>
 
+      </v-virtual-scroll>
+
+    </v-row>
+
+    <v-row class="text-center" align="center" justify="center" style="margin:auto; justify-content: center; margin-bottom: 30px; margin-top: 0px;" >
+
+      <v-btn
+      v-clipboard:copy="geoJSONstring"
+      v-clipboard:success="onCopy"
+      v-clipboard:error="onError"
+      class="primary white--text ma-5 elevation-10"
+      >
+      Copy geoJSON to Clipboard
+      </v-btn>
+
+    </v-row>
+
+    <v-row class="text-center" align="center" justify="center" style="margin:auto; justify-content: center; margin-bottom: 30px; margin-top: 0px;" >
+
+    <v-card
+    v-if="lat && lon"
+    elevation="12"
+    width="600px"
+    class="pa-8"
+    >
+
+       <div v-if="featureAmount != undefined">
+          Selected features: {{featureAmount}}
       </div>
 
-        <button @click="printGeoJson" style="margin-top: 20px;">
-          print geoJSON
-        </button>
 
-      <div id="geoJSON" style="margin: 15px; border:1px solid black; padding: 20px;">
-
+      <div v-if="lat && lon" style="margin: 20px;"> 
+        Current center: lat {{lat}} lon {{lon}}
       </div>
 
-      <h1> Or paste in geoJSON and let it display on the map </h1>
 
-      <input type="text" id="jsonString" value="">
+    </v-card>
 
-      <button @click="GeoJSONtoMap" style="margin-top: 20px;">
+    </v-row>
+
+      <h3 style="padding-top:30px;"> Paste in a geoJSON string and display it on the map </h3>
+
+      <v-row style="padding-top: 20px; padding-left: 50px; padding-right: 50px;">
+
+        
+      <v-text-field
+
+      label="Paste your geoJSON"
+      v-model="inputJSONstring"
+
+      ></v-text-field>
+
+      </v-row>
+
+      <v-row class="text-center" align="center" justify="center" style="margin:auto; justify-content: center; margin-bottom: 30px; margin-top: 0px;" >
+
+      <v-btn @click="GeoJSONtoMap" 
+      style="margin-top: 0px;" 
+      class="primary white--text ma-5 elevation-10">
           Submit
-      </button>
+      </v-btn>
 
-
+      </v-row>
 
   </div>
+
+</v-content>
+
 </template>
 
 <script>
@@ -65,6 +132,7 @@ import {LMap, LTileLayer, LControlAttribution, LControlLayers } from 'vue2-leafl
 import { OpenStreetMapProvider } from 'leaflet-geosearch';
 import VGeoSearch from './GeoSearch.vue';
 import 'leaflet-draw';
+import VueJsonPretty from 'vue-json-pretty';
 
 
 export default {  
@@ -74,7 +142,8 @@ export default {
     LControlAttribution,
     LTileLayer,
     LControlLayers,
-    VGeoSearch
+    VGeoSearch,
+    VueJsonPretty
   },
   props: {
   },
@@ -84,12 +153,17 @@ export default {
       center: [50.045730621731266, 8.22232246398926],
       zoomanimation: true,
       zoom: 15,
-      lat: 50.045730621731266,
-      lon: 8.22232246398926,
+      lat: "",
+      lon: "",
       map_initialized: false,
       map: Object,
       editableLayers: Object,
       drawControl: Object,
+      geoJSON: {},
+      geoJSONstring: "",
+      inputJSONstring: undefined,
+      featureAmount: undefined,
+      maxFeatures: 5,
       tileProviders: [
         {
           name: 'OpenStreetMap',
@@ -150,15 +224,17 @@ export default {
                   //},
                   polygon: true,
                   rectangle: true,
-                  circle: true,
-                  marker: true
+                  circle: false,
+                  marker: true,
+                  circlemarker: false
                 },
                 edit: {
                   featureGroup: this.editableLayers,
                   polyline: false,
                   polygon: true,
                   rectangle: true,
-                  circle: true,
+                  circle: false,
+                  circlemarker: false,
                   edit: true
                 }
               });
@@ -169,13 +245,32 @@ export default {
               map.addControl(this.drawControl);
 
               map.on(window.L.Draw.Event.CREATED, (e) => {
+
+                if (this.featureAmount == undefined || this.featureAmount < this.maxFeatures) {
                 // const type = e.layerType;
                 const layer = e.layer;
                 // Do whatever else you need to. (save to db, add to map etc)
-                this.editableLayers.addLayer(layer); 
-                this.printGeoJson();           
+                this.editableLayers.addLayer(layer);                
+                this.featureAmount = Object.keys(this.editableLayers._layers).length; 
+                this.printGeoJson(); 
+                }
+                else {
+                  window.alert("This is not allowed!")
+                }
               });
-            });
+
+              map.on(window.L.Draw.Event.EDITED, () => {
+                this.geoJSON = this.editableLayers.toGeoJSON();
+
+              });
+
+              map.on(window.L.Draw.Event.DELETED, () => {
+                this.geoJSON = this.editableLayers.toGeoJSON();
+
+              });
+
+              })
+              
   },
 
   updated: function() {
@@ -188,22 +283,65 @@ export default {
   methods: {
 
     printGeoJson: function() {
-
       let geojson = this.editableLayers.toGeoJSON()
-      document.getElementById("geoJSON").innerHTML = JSON.stringify(geojson)
-
+      let geoJSONstring = JSON.stringify(geojson);
+      this.geoJSONstring = geoJSONstring;
+      this.geoJSON = geojson;
     },
     centerUpdated (center){
           this.center = center;
       },
 
     GeoJSONtoMap() {
-    var geojson = JSON.parse((document.getElementById("jsonString").value));
-    window.L.geoJSON(geojson, {onEachFeature: this.layerToMap})
+
+      if (this.inputJSONstring != undefined && this.inputJSONstring != ""){
+        try {
+          var geoJSON = JSON.parse(this.inputJSONstring);
+          window.L.geoJSON(geoJSON, {onEachFeature: this.layerToMap})
+          this.geoJSON = this.editableLayers.toGeoJSON();
+          
+        } catch (error) {
+          window.alert("The geoJSON is not valid.")
+          
+        }
+          
+
+      }
+      else  { window.alert("You need to type in a geoJSON to submit.")}
+
+
+    
     },
 
     layerToMap(feature,layer){
       this.editableLayers.addLayer(layer);
+    },
+
+    doNothing() {
+
+    },
+
+    onCopy: function (e) {
+      alert('You just copied: ' + e.text)
+    },
+    onError: function () {
+      alert('Failed to copy texts')
+    }
+
+
+  },
+  computed: {
+    geoJSONbool: function() {
+      if ( (Object.keys(this.geoJSON).length) == 0) {
+        return false
+      }
+      else {
+        return true
+      }
+
+    },
+    geoJSONarray: function() {
+      return [this.geoJSON]
     }
 
 
@@ -220,4 +358,5 @@ ul {
 a {
   color: #42b983;
 }
+
 </style>

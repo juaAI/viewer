@@ -5,6 +5,10 @@ import 'leaflet-fullscreen/dist/leaflet.fullscreen.css';
 import 'leaflet-fullscreen/dist/Leaflet.fullscreen';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import { Icon } from 'leaflet';
+import vuetify from './plugins/vuetify';
+import VueClipboard from 'vue-clipboard2';
+
+Vue.use(VueClipboard)
 
 delete Icon.Default.prototype._getIconUrl;
 Icon.Default.mergeOptions({
@@ -13,8 +17,10 @@ Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
+
 Vue.config.productionTip = false
 
 new Vue({
-  render: h => h(App),
+  vuetify,
+  render: h => h(App)
 }).$mount('#app')

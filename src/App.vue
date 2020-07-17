@@ -1,7 +1,11 @@
 <template>
-  <div id="app">
-    <HelloWorld/>
-  </div>
+  <v-app>
+    <v-main>
+      <div id="app">
+        <HelloWorld/>
+      </div>
+    </v-main>
+  </v-app>
 </template>
 
 <script>
@@ -22,6 +26,10 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 10px;
 }
+.v-application a {
+    color: rgb(216, 234, 247) !important;
+}
+
 </style>
