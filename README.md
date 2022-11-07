@@ -1,4 +1,4 @@
-# Geojson Viewer draft (demo at [viewer.clime.ai](https://viewer.clime.ai)
+# Geojson Viewer draft like geojson.io
 
 ## Project setup
 ```
